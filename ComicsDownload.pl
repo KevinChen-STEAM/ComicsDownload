@@ -9,42 +9,60 @@
 # GUI
 # multiple download
 # log
+# Correct Title
+# Download tmp directory
+#
+#---Change History---
+#	2016-03-07 Add Stop chapter
+#              Mkdir temp directory
+#              Remove exist files
 
 use strict;
 use warnings;
 use LWP::Simple;
 
+#----------------------------Setting------------------------------#
 #######################
 ##    URL & TITLE    ##
 #######################
-#進擊的巨人
-my $name = "AttachOnTitan";
-my $url  = 'http://www.mh5.tw/comic/3212/8032';
+my $name = "JoJo";
+my $url  = 'http://www.mh5.tw/comic/9113/25513';
 
 #######################
 ##      CHAPTER      ##
 #######################
-my $chap = 1; #start chapter/volume
+my $chap     = 1; #start chapter/volume
+my $chapStop = 80;
 
+#######################
+##      CHAPTER      ##
+#######################
+my $binDir = "\/Users\/mac\/data\/Comics\/pgm\/bin\/";
+my $tmpDir = "\/Users\/mac\/data\/Comics\/tmp\/";
 
 
 #----------------------------PROGRAM START------------------------------#
 
+print "\n\n------>Start to download Comics >$name< !! \n\n";
+
 ## Check OS
 my $os = $^O;
-print "OS is >$os<\n";
+#print "OS is >$os<\n";
 #exit 0;
 
 my $RenameCMD; # Rename Command
+my $rmCMD;
 if ($os eq "darwin"){
 	$RenameCMD = "mv";
+	$rmCMD     = "rm";
 }else{
 	$RenameCMD = "rename";
+	$rmCMD     = "del";
 }
 
 $url =~ /\/(\d+)$/;
 my $urlNum = $1;
-print "urlNum:$urlNum";
+#print "urlNum:$urlNum";
 
 $url =~ /(.*)\/comic/;
 my $urlBase = $1;
@@ -74,7 +92,7 @@ foreach(@chapter){
 		next;
 	}
 	
-	print "\n\n----->Start to download Vol.$chap";
+	print "\n----->Start to download Vol.$chap\n";
 	my $url = $urlBase.$_;
 	#print "$url\n";
 	my $content = get($url) or die 'Unable to get page';
@@ -83,7 +101,25 @@ foreach(@chapter){
 	$content =~ /pic_base =(.*);/;
 	my $source = $1;
 	#print "$pics\n\n\n$source\n";
-	DownloadPics($pics,$chap,$source);
+	
+    my $FirstLevelDir = "$tmpDir$name";
+    MkDir("$FirstLevelDir");
+    
+    $chap = sprintf ( "%03d", $chap);
+	my $SecLevelDir = "$FirstLevelDir\/$chap";
+	MkDir("$SecLevelDir");
+	
+	DownloadPics( $pics,$chap,$source,$SecLevelDir );
+	
+	if ( ( $chapStop != 0 ) && ( $chap == $chapStop ) ){
+		print "\n\n----------------------------------------------------------------------\n";
+		print "----------------------------------------------------------------------\n";
+		print "----->Stop Downlaod At Chapter/Volume >$chap< !!\n";
+		print "----------------------------------------------------------------------\n";
+		print "----------------------------------------------------------------------\n\n\n";
+		exit 0;
+	}
+	
 	$chap++;
 	#exit 0;
 }
@@ -103,42 +139,37 @@ sub RemoveBrackets{
 	return $var;
 }
 
+sub MkDir{
+    my $dir = shift;
+	if (-e $dir){
+		print "\n\n----->Directory >$dir< is already exist!\n";
+		sleep 1;
+	}else{
+		print "\n\n----->mkdir $dir\n\n";
+		system "mkdir $dir";
+	}
+}
+
 sub DownloadPics{
     my $pics   = shift;
 	my $vol    = shift;
 	my $source = shift;
+	my $dir    = shift;
 	my $pgnum  = 1;
 	$pics      = RemoveBrackets($pics);
 	$source    = RemoveBrackets($source);
 	
 	my @pic = split(",",$pics);
 
-	if (-e $name){
-		print "\n\n";
-		print "--->Directory is already exist!\n";
-		print "\n\n";
-		sleep 1;
-	}else{
-		#print "mkdir $name";
-		system "mkdir $name";
-		#<STDIN>;
-	}
-
-	if (-e $vol){
-		print "\n\n";
-		print "--->Directory is already exist!\n";
-		print "\n\n";
-		sleep 1;
-	}else{
-		$vol = sprintf("%02d",$vol);
-		system "mkdir \"$name\/$vol\"";
-		#<STDIN>;
-	}
-
 	foreach(@pic){
-		
+
 		$_ =~ s/\"//g;
-		#print $_ . "\n";
+		#print "\n\n\n>$binDir$_<\n\n\n";
+		if (-e "$binDir$_"){
+			print "--->Pic >$binDir$_<is already exist !!\n";
+			print "--->rm $binDir$_\*";
+			system "$rmCMD $binDir$_\*";
+		}
 
 		#<STDIN>;
 		my $cmd = "wget $source$_";
@@ -150,8 +181,8 @@ sub DownloadPics{
 		print "------>$name-$vol-$newName.jpg\n";
 		print "----------------------------------------------------------------------\n\n\n";
 		
-		my $cmd1 = "$RenameCMD $_ \"$name\/$vol\/$name-$vol-$newName.jpg\"";
-		print ">$cmd1<\n";
+		my $cmd1 = "$RenameCMD $_ \"$dir\/$name-$vol-$newName.jpg\"";
+		#print ">$cmd1<\n";
 		system $cmd1;
 		sleep 1;
 		$pgnum++;
