@@ -1,7 +1,8 @@
 #!/Users/mac/perl5/perlbrew/perls/perl-5.16.0/bin/perl
 
 # Version-2016-03-07
-#---Undone List---
+#---To Do List---
+# Relatively Download Path
 # Compress
 # Double Byte Character
 # Start/Stop download Chapter/Volume
